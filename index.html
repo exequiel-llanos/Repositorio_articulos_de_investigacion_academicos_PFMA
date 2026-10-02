@@ -1,0 +1,609 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Producción académica · Formación Pedagógica en Matemática · USS</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,440;0,9..144,600;0,9..144,700;1,9..144,500;1,9..144,600&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.9.0/d3.min.js"></script>
+<style>
+  :root{
+    --paper:#EDE7D8; --paper-deep:#E1D9C4; --card:#F6F2E6;
+    --ink:#1B1E2B; --ink-soft:#5B5A66; --ink-faint:#8B8878; --rule:#C9BFA3;
+    --pedagogia:#B24C63; --pedagogia-soft:#B24C6322;
+    --didactica:#A97418; --didactica-soft:#A9741822;
+    --disciplinar:#276B5E; --disciplinar-soft:#276B5E22;
+    --gold:#8C6A22;
+    --shadow:0 1px 2px rgba(27,30,43,0.06), 0 8px 24px -12px rgba(27,30,43,0.18);
+  }
+  *{box-sizing:border-box;}
+  html{scroll-behavior:smooth;}
+  body{margin:0; background:var(--paper); color:var(--ink); font-family:'Inter',sans-serif; -webkit-font-smoothing:antialiased;}
+  ::selection{background:var(--gold); color:#fff;}
+  a{color:inherit;}
+  .mono{font-family:'IBM Plex Mono',monospace; letter-spacing:0.01em;}
+  .eyebrow{font-family:'IBM Plex Mono',monospace; font-size:0.72rem; letter-spacing:0.14em; text-transform:uppercase; color:var(--ink-soft);}
+
+  /* HERO */
+  .hero{position:relative; padding:5rem 6vw 3.6rem; overflow:hidden; border-bottom:1px solid var(--rule);}
+  .hero__constellation{position:absolute; inset:0; width:100%; height:100%; opacity:0.5; pointer-events:none;}
+  .hero__inner{position:relative; max-width:900px;}
+  .program-badge{
+    display:inline-flex; align-items:center; gap:0.55rem;
+    font-family:'IBM Plex Mono',monospace; font-size:0.68rem; letter-spacing:0.09em; text-transform:uppercase;
+    border:1px solid var(--rule); background:var(--card); color:var(--ink-soft);
+    padding:0.45rem 0.85rem; border-radius:999px; margin-bottom:1.2rem; line-height:1.5;
+  }
+  .program-badge::before{content:"∑"; font-family:'Fraunces',serif; font-size:0.95rem; color:var(--disciplinar); font-style:normal;}
+  .hero h1{font-family:'Fraunces',serif; font-weight:600; font-size:clamp(2.1rem,4.8vw,3.4rem); line-height:1.06; margin:0.4rem 0 1.1rem; letter-spacing:-0.01em;}
+  .hero h1 em{font-style:italic; font-weight:500; color:var(--disciplinar);}
+  .hero p.lede{font-size:1.03rem; line-height:1.6; color:var(--ink-soft); max-width:62ch; margin:0 0 2.1rem;}
+  .stat-row{display:flex; flex-wrap:wrap; border-top:1px solid var(--rule); border-bottom:1px solid var(--rule);}
+  .stat{padding:0.9rem 1.6rem 0.9rem 0; margin-right:1.6rem; border-right:1px solid var(--rule);}
+  .stat:last-child{border-right:none;}
+  .stat .n{font-family:'Fraunces',serif; font-weight:600; font-size:1.85rem; display:block; line-height:1;}
+  .stat .l{font-family:'IBM Plex Mono',monospace; font-size:0.66rem; letter-spacing:0.08em; text-transform:uppercase; color:var(--ink-faint); display:block; margin-top:0.35rem;}
+
+  /* SECTIONS */
+  .section{padding:3.8rem 6vw; border-bottom:1px solid var(--rule);}
+  .section__head{display:flex; justify-content:space-between; align-items:flex-end; flex-wrap:wrap; gap:1rem; margin-bottom:1.8rem;}
+  .section__head h2{font-family:'Fraunces',serif; font-weight:600; font-size:clamp(1.5rem,3vw,2.05rem); margin:0.3rem 0 0;}
+  .section__head p{color:var(--ink-soft); max-width:56ch; margin:0.5rem 0 0; line-height:1.55; font-size:0.94rem;}
+
+  /* TIMELINE */
+  .timeline-wrap{background:var(--card); border:1px solid var(--rule); box-shadow:var(--shadow); padding:1.4rem 1.4rem 0.9rem;}
+  #timelineSvg{width:100%; height:auto; display:block;}
+  .timeline-legend{display:flex; flex-wrap:wrap; gap:1.3rem; padding:0.9rem 0.2rem 0.4rem; font-size:0.82rem; color:var(--ink-soft); align-items:center;}
+  .legend-item{display:flex; align-items:center; gap:0.5rem;}
+  .legend-dot{width:10px; height:10px; border-radius:50%; display:inline-block;}
+  .tooltip{
+    position:fixed; pointer-events:none; background:var(--ink); color:var(--paper);
+    font-family:'IBM Plex Mono',monospace; font-size:0.73rem; line-height:1.5;
+    padding:0.55rem 0.75rem; border-radius:4px; max-width:260px; opacity:0;
+    transition:opacity 0.1s ease; z-index:50; white-space:pre-line;
+  }
+
+  /* FILTERS */
+  .filters{
+    position:sticky; top:0; z-index:20; background:var(--paper-deep);
+    border-bottom:1px solid var(--rule); padding:0.85rem 6vw;
+    display:flex; flex-wrap:wrap; gap:0.55rem; align-items:center;
+  }
+  .filters input[type="search"]{flex:1 1 200px; padding:0.55rem 0.8rem; border:1px solid var(--rule); background:var(--card); font-family:'Inter',sans-serif; font-size:0.88rem; color:var(--ink); border-radius:3px;}
+  .filters select{padding:0.55rem 0.5rem; border:1px solid var(--rule); background:var(--card); font-family:'IBM Plex Mono',monospace; font-size:0.76rem; color:var(--ink); border-radius:3px; max-width:220px;}
+  .filters input:focus, .filters select:focus{outline:2px solid var(--disciplinar); outline-offset:1px;}
+  .btn-ghost{
+    font-family:'IBM Plex Mono',monospace; font-size:0.74rem; background:none;
+    border:1px solid var(--rule); padding:0.55rem 0.75rem; border-radius:3px; cursor:pointer; color:var(--ink-soft);
+  }
+  .btn-ghost:hover{border-color:var(--ink); color:var(--ink);}
+  #resultCount{font-family:'IBM Plex Mono',monospace; font-size:0.74rem; color:var(--ink-faint); margin-left:auto; white-space:nowrap;}
+
+  /* CATALOG */
+  #catalogGrid{display:grid; grid-template-columns:repeat(auto-fill, minmax(280px,1fr)); gap:1.1rem;}
+  .card{
+    background:var(--card); border:1px solid var(--rule); border-left:4px solid var(--area-color, var(--ink));
+    box-shadow:var(--shadow); padding:1.1rem 1.2rem 1.2rem;
+    display:flex; flex-direction:column; gap:0.6rem; animation:rise 0.4s ease both;
+  }
+  @keyframes rise{from{opacity:0; transform:translateY(6px);} to{opacity:1; transform:translateY(0);}}
+  @media (prefers-reduced-motion: reduce){ .card{animation:none;} html{scroll-behavior:auto;} }
+  .card__meta{display:flex; justify-content:space-between; align-items:center; font-family:'IBM Plex Mono',monospace; font-size:0.68rem; letter-spacing:0.06em; text-transform:uppercase; color:var(--ink-faint);}
+  .card__title{font-family:'Fraunces',serif; font-weight:600; font-size:1.06rem; line-height:1.32; margin:0;}
+  .card__author{font-size:0.85rem; color:var(--ink-soft); display:flex; align-items:center; gap:0.4rem;}
+  .sex-mark{font-family:'IBM Plex Mono',monospace; font-size:0.62rem; color:var(--ink-faint); border:1px solid var(--rule); border-radius:50%; width:1.1rem; height:1.1rem; display:inline-flex; align-items:center; justify-content:center; flex-shrink:0;}
+  .tema-row{display:flex; flex-wrap:wrap; gap:0.35rem;}
+  .tema-chip{
+    font-family:'IBM Plex Mono',monospace; font-size:0.63rem; letter-spacing:0.02em;
+    border:1px dashed var(--rule); color:var(--ink-soft); background:none;
+    padding:0.18rem 0.5rem; border-radius:999px; cursor:pointer;
+  }
+  .tema-chip:hover{border-color:var(--ink); color:var(--ink); border-style:solid;}
+  .card__footer{margin-top:auto; padding-top:0.6rem; border-top:1px dashed var(--rule); display:flex; justify-content:space-between; align-items:center; gap:0.6rem;}
+  .area-pill{font-family:'IBM Plex Mono',monospace; font-size:0.64rem; letter-spacing:0.04em; padding:0.22rem 0.5rem; border-radius:999px; background:var(--area-soft,#0000000d); color:var(--area-color,var(--ink));}
+  .card__link{font-family:'IBM Plex Mono',monospace; font-size:0.71rem; color:var(--ink); text-decoration:none; border-bottom:1px solid var(--ink-faint); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:55%;}
+  .card__link.disabled{color:var(--ink-faint); border-bottom:1px dashed var(--rule); cursor:default;}
+  .empty-state{grid-column:1/-1; text-align:center; padding:3.2rem 1rem; color:var(--ink-soft);}
+  .empty-state p{margin:0.4rem 0;}
+  .empty-state button{margin-top:1rem; font-family:'IBM Plex Mono',monospace; font-size:0.78rem; background:var(--ink); color:var(--paper); border:none; padding:0.6rem 1.1rem; border-radius:3px; cursor:pointer;}
+  .active-node-chip{
+    display:none; align-items:center; gap:0.5rem;
+    font-family:'IBM Plex Mono',monospace; font-size:0.75rem;
+    background:var(--ink); color:var(--paper); padding:0.35rem 0.6rem 0.35rem 0.8rem;
+    border-radius:999px; margin-bottom:1rem;
+  }
+  .active-node-chip button{background:none; border:none; color:var(--paper); font-size:0.9rem; cursor:pointer; line-height:1; padding:0 0.2rem;}
+
+  /* PANORAMA */
+  .panorama-grid{display:grid; grid-template-columns:repeat(auto-fit,minmax(240px,1fr)); gap:2.2rem;}
+  .panorama-block h3{font-family:'IBM Plex Mono',monospace; font-size:0.71rem; letter-spacing:0.08em; text-transform:uppercase; color:var(--ink-faint); margin:0 0 1rem;}
+  .bar-row{margin-bottom:0.6rem;}
+  .bar-row__label{display:flex; justify-content:space-between; font-size:0.79rem; margin-bottom:0.25rem; color:var(--ink-soft); gap:0.6rem;}
+  .bar-row__label .n{font-family:'IBM Plex Mono',monospace; color:var(--ink); flex-shrink:0;}
+  .bar-track{background:var(--paper-deep); height:7px; border-radius:4px; overflow:hidden;}
+  .bar-fill{height:100%; border-radius:4px;}
+
+  footer{padding:2.2rem 6vw 3rem; font-size:0.79rem; color:var(--ink-faint); display:flex; justify-content:space-between; flex-wrap:wrap; gap:0.6rem;}
+
+  @media (max-width:720px){
+    .hero{padding:3.2rem 5vw 2.4rem;}
+    .section{padding:2.6rem 5vw;}
+    .filters{padding:0.8rem 5vw;}
+    #resultCount{width:100%; margin-left:0; order:10; text-align:left;}
+    .stat{padding-right:1rem; margin-right:1rem;}
+    .stat .n{font-size:1.45rem;}
+  }
+</style>
+</head>
+<body>
+
+<header class="hero">
+  <svg class="hero__constellation" id="heroDecor" preserveAspectRatio="xMidYMid slice"></svg>
+  <div class="hero__inner">
+    <span class="program-badge">Universidad San Sebastián · Programa de Formación Pedagógica · Área de Matemática</span>
+    <h1>La producción académica del programa, <em>ordenada y navegable.</em></h1>
+    <p class="lede">Registro de los artículos de investigación del cuerpo académico del Programa de Formación Pedagógica para Licenciados y/o Profesionales en el Área de Matemática: organizado por actividad curricular, temas de investigación y trayectoria anual, con enlace a cada fuente.</p>
+    <div class="stat-row" id="statRow"></div>
+  </div>
+</header>
+
+<section class="section" id="trayectoria">
+  <div class="section__head">
+    <div>
+      <span class="eyebrow">Vista 01</span>
+      <h2>Trayectoria 2021–2025</h2>
+      <p>Producción anual apilada por actividad curricular. Pasa el cursor sobre una barra para ver el detalle.</p>
+    </div>
+  </div>
+  <div class="timeline-wrap">
+    <svg id="timelineSvg"></svg>
+    <div class="timeline-legend">
+      <span class="legend-item"><span class="legend-dot" style="background:var(--pedagogia)"></span>Pedagogía</span>
+      <span class="legend-item"><span class="legend-dot" style="background:var(--didactica)"></span>Didáctica de la Matemática</span>
+      <span class="legend-item"><span class="legend-dot" style="background:var(--disciplinar)"></span>Disciplinar</span>
+    </div>
+  </div>
+</section>
+
+<div class="filters" id="filters">
+  <input type="search" id="searchInput" placeholder="Buscar por título, autor(a) o tema…">
+  <select id="areaSelect"></select>
+  <select id="temaSelect"></select>
+  <select id="yearSelect"></select>
+  <select id="authorSelect"></select>
+  <select id="sortSelect">
+    <option value="year-desc">Más recientes primero</option>
+    <option value="year-asc">Más antiguos primero</option>
+    <option value="author-asc">Autor(a) A–Z</option>
+    <option value="title-asc">Título A–Z</option>
+  </select>
+  <button id="clearFilters" class="btn-ghost" type="button">Limpiar</button>
+  <button id="exportCsv" class="btn-ghost" type="button">↓ CSV</button>
+  <span id="resultCount"></span>
+</div>
+
+<section class="section" id="catalogo">
+  <div class="section__head">
+    <div>
+      <span class="eyebrow">Vista 02</span>
+      <h2>Catálogo</h2>
+      <p>Cada ficha enlaza a la fuente original cuando el dato lo permite. Los temas son clicables y filtran el catálogo.</p>
+    </div>
+  </div>
+  <div id="activeNodeChip" class="active-node-chip">
+    <span id="activeNodeLabel"></span>
+    <button id="activeNodeClear" type="button" aria-label="Quitar filtro">✕</button>
+  </div>
+  <div id="catalogGrid"></div>
+</section>
+
+<section class="section" id="panorama" style="border-bottom:none;">
+  <div class="section__head">
+    <div>
+      <span class="eyebrow">Vista 03</span>
+      <h2>Panorama</h2>
+      <p>Distribución agregada de todo el registro.</p>
+    </div>
+  </div>
+  <div class="panorama-grid" id="panoramaGrid"></div>
+</section>
+
+<footer>
+  <span>Repositorio estático del Programa de Formación Pedagógica para Licenciados y/o Profesionales en el Área de Matemática, Universidad San Sebastián. Sin backend — filtrado y gráficos se calculan en el navegador. La clasificación temática es editorial y puede ajustarse en el arreglo de datos.</span>
+  <span class="mono" id="footerCount"></span>
+</footer>
+
+<div class="tooltip" id="tooltip"></div>
+<script>
+/* ============ DATA — fuente: FICHA_DE_DATOS_observaciones_CNA (hoja "10. Investigación") ============ */
+/* temas = clasificación editorial, revisar antes de publicar */
+const DATA = [
+{author:"Soraya Rojas Timaure", sex:"F", type:"Artículo de investigación", title:"Metodología postmoderna para profundizar en los valores educativos", year:2021, area:"Pedagogía", temas:["Educación en valores"], source:"https://revistas.uclave.org/index.php/redine/article/view/3582"},
+{author:"Soraya Rojas Timaure", sex:"F", type:"Artículo de investigación", title:"Aproximaciones teórica sobre Educación en Valores en el siglo XXI", year:2021, area:"Pedagogía", temas:["Educación en valores"], source:"https://doi.org/10.46498/reduipb.v24i3.1373"},
+{author:"Carmen Cecilia Espinoza Melo", sex:"F", type:"Artículo de investigación", title:"Dispositivo didáctico REI, co-enseñanza e identidad docente en contextos de inclusión educativa", year:2021, area:"Pedagogía", temas:["Inclusión y diversidad", "Práctica y evaluación docente"], source:"https://www.researchgate.net/publication/350959519_Dispositivo_didactico_REI_co-ensenanza_e_identidad_docente_en_contextos_de_inclusion_educativa"},
+{author:"Daniela Araya Bastias", sex:"F", type:"Artículo de investigación", title:"Interpretación y comprensión de gráficos estadísticos por profesores de Matemáticas en formación", year:2021, area:"Didáctica de la Matemática", temas:["Estadística e inferencia", "Formación de profesores"], source:"https://doi.org/10.29035/redes.4.1.1"},
+{author:"Daniela Araya Bastias", sex:"F", type:"Artículo de investigación", title:"Epistemic Criteria for Designing Limit Tasks on a Real Variable Function", year:2021, area:"Didáctica de la Matemática", temas:["Funciones y límites"], source:"https://www.scielo.br/j/bolema/a/8BP3jqY69wGzgPvSpMMCCzr/abstract/?lang=es"},
+{author:"Jennifer Bravo Rosero", sex:"F", type:"Artículo de investigación", title:"Normal periodic solutions for the fractional abstract Cauchy problem", year:2021, area:"Disciplinar", temas:["Análisis y EDO"], source:"DOI: 10.1186/s13661-021-01529-2"},
+{author:"Jennifer Bravo Rosero", sex:"F", type:"Artículo de investigación", title:"Second and third order forward difference operator: what is in between?", year:2021, area:"Disciplinar", temas:["Análisis y EDO"], source:"https://ui.adsabs.harvard.edu/link_gateway/2021RvMad.115...86B/doi:10.1007/s13398-021-01015-5"},
+{author:"Carmen Cecilia Espinoza Melo", sex:"F", type:"Artículo de investigación", title:"La epistemología en la formación del profesorado de matemática e historia", year:2022, area:"Pedagogía", temas:["Formación de profesores"], source:"https://doi.org/10.34024/prometeica.2022.25.12207"},
+{author:"Yocelyn Parra Urrea", sex:"F", type:"Artículo de investigación", title:"Proposal to Systematize the Reflection and Assessment of the Teacher's Practice on the Teaching of Functions", year:2022, area:"Didáctica de la Matemática", temas:["Funciones y límites", "Práctica y evaluación docente"], source:"https://doi.org/10.3390/math10183330"},
+{author:"Jorge Zapata Hernández", sex:"M", type:"Artículo de investigación", title:"Addition theorems for Cᵏ real functions and applications in ordinary differential equations", year:2022, area:"Disciplinar", temas:["Análisis y EDO"], source:"https://doi.org/10.1007/s00010-021-00822-w"},
+{author:"Jorge Zapata Hernández", sex:"M", type:"Artículo de investigación", title:"Modified quasispecies model: the analysis of a periodic therapy", year:2022, area:"Disciplinar", temas:["Dinámica de sistemas"], source:"https://doi.org/10.1007/s00285-022-01726-2"},
+{author:"Jennifer Bravo Rosero", sex:"F", type:"Artículo de investigación", title:"The Abstract Cauchy Problem with Caputo-Fabrizio Fractional Derivative", year:2022, area:"Disciplinar", temas:["Análisis y EDO"], source:"https://doi.org/10.3390/math10193540"},
+{author:"Jennifer Bravo Rosero", sex:"F", type:"Artículo de investigación", title:"Qualitative properties of nonlocal discrete operators", year:2022, area:"Disciplinar", temas:["Análisis y EDO"], source:"https://doi.org/10.1002/mma.8174"},
+{author:"Carlos Gallegos Lastra", sex:"M", type:"Artículo de investigación", title:"Criterios de idoneidad epistémica para la enseñanza de las funciones: el caso de la función inversa en contexto de microenseñanza", year:2023, area:"Didáctica de la Matemática", temas:["Funciones y límites", "Práctica y evaluación docente"], source:"https://doi.org/10.37618/PARADIGMA.1011-2251.2023.p427-452.id1398"},
+{author:"Daniela Araya Bastias", sex:"F", type:"Artículo de investigación", title:"Componentes e indicadores para el diseño y reflexión de procesos de instrucción sobre límites de funciones en una variable", year:2023, area:"Didáctica de la Matemática", temas:["Funciones y límites"], source:"https://revistaparadigma.com.br/index.php/paradigma/article/view/1392"},
+{author:"Erich Leighton Vallejos", sex:"M", type:"Artículo de investigación", title:"Percepción de los docentes de matemática en la utilización de recursos tecnológicos de gamificación", year:2023, area:"Didáctica de la Matemática", temas:["Tecnología y gamificación"], source:"https://doi.org/10.22235/pe.v16i2.3085"},
+{author:"Evelyn Quiñones Troncoso", sex:"F", type:"Artículo de investigación", title:"Comprensión neurocientífica de la enseñanza de la lectoescritura en el tránsito de la Educación Preescolar a la Básica", year:2024, area:"Pedagogía", temas:["Neurociencia y aprendizaje"], source:"https://transformacion.reduc.edu.cu/index.php/transformacion"},
+{author:"Graciela Acevedo Cardelas", sex:"F", type:"Artículo de investigación", title:"Conflictos Potenciales Identificados en los Libros de Texto de Matemáticas de Educación Básica de Chile para el Estudio del Álgebra", year:2024, area:"Didáctica de la Matemática", temas:["Currículo y libros de texto"], source:"https://hipatiapress.com/hpjournals/index.php/redimat/es/article/view/14137"},
+{author:"Graciela Acevedo Cardelas", sex:"F", type:"Artículo de investigación", title:"A proposal for the study of mathematics teachers’ beliefs through the analysis of their practices", year:2024, area:"Didáctica de la Matemática", temas:["Práctica y evaluación docente"], source:"https://doi.org/10.1007/s13394-024-00496-y"},
+{author:"Gerardo Urra Barra", sex:"M", type:"Artículo de investigación", title:"Ser profesor en entornos virtuales: desafíos y demandas post pandemia a la formación inicial docente. Una aproximación desde la evaluación de futuros profesores y mentores", year:2024, area:"Pedagogía", temas:["Formación de profesores", "Tecnología y gamificación"], source:"https://doi.org/10.21703/rexe.v23i51.2156"},
+{author:"Cristobal Castro Sandoval", sex:"M", type:"Artículo de investigación", title:"Convergencias y divergencias en las trayectorias profesionales de docentes de Educación Media Técnico-Profesional que estudian pedagogía", year:2024, area:"Pedagogía", temas:["Formación de profesores"], source:"https://www.scielo.cl/pdf/pel/v61n1/0719-0409-pel-61-01-00103.pdf"},
+{author:"Ingrid Jácome Anya", sex:"F", type:"Artículo de investigación", title:"Curricular proposal to address diversity in mathematics class: A design on sequences and patterns", year:2024, area:"Didáctica de la Matemática", temas:["Inclusión y diversidad", "Currículo y libros de texto"], source:"https://doi.org/10.29333/ejmste/14630"},
+{author:"Daniela Araya Bastias", sex:"F", type:"Artículo de investigación", title:"Partial Meanings that a Teacher Mobilizes for Learning Limits at the School Level", year:2024, area:"Didáctica de la Matemática", temas:["Funciones y límites"], source:"https://rgsa.openaccesspublications.org/rgsa/article/view/9642"},
+{author:"Jorge Zapata Hernández", sex:"M", type:"Artículo de investigación", title:"Inclusión de estudiantes con altas capacidades en la escuela: centrándose en el aprendizaje de la matemática, la docencia universitaria y el trabajo colaborativo tanto en entornos presenciales como virtuales", year:2024, area:"Pedagogía", temas:["Inclusión y diversidad"], source:"https://doi.org/10.17013/risti.56.21-34"},
+{author:"Cristobal Castro Sandoval", sex:"M", type:"Artículo de investigación", title:"Factores que explican la satisfacción laboral de los profesores de educación secundaria en Chile", year:2025, area:"Pedagogía", temas:["Formación de profesores"], source:"https://pensamientoeducativo.uc.cl/index.php/pel/article/view/80352"},
+{author:"Natalia Marquez Aguayo", sex:"F", type:"Artículo de investigación", title:"Chilean brush-tailed mouse (Octodon degus): a diurnal precocial rodent as a new model to study visual receptive field properties of superior colliculus neurons", year:2025, area:"Pedagogía", temas:["Neurociencia y aprendizaje"], source:"https://journals.physiology.org/doi/full/10.1152/jn.00128.2024"},
+{author:"Ingrid Jácome Anya", sex:"F", type:"Artículo de investigación", title:"Effects of a training intervention on secondary school teachers’ attitudes toward statistics", year:2025, area:"Didáctica de la Matemática", temas:["Estadística e inferencia", "Formación de profesores"], source:"https://doi.org/10.29333/iejme/16417"},
+{author:"Exequiel Llanos Lagos", sex:"M", type:"Artículo de investigación", title:"Mathematical competencies of prospective teachers when teaching confidence intervals in a microteaching context", year:2025, area:"Didáctica de la Matemática", temas:["Estadística e inferencia", "Formación de profesores"], source:"DOI: 10.29333/ejmste/16845"},
+{author:"Exequiel Llanos Lagos", sex:"M", type:"Artículo de investigación", title:"Evolución del Tratamiento de los Intervalos de Confianza en el Currículo de Matemáticas de Bachillerato de Chile: Una Mirada Histórica (2005-2024)", year:2025, area:"Didáctica de la Matemática", temas:["Estadística e inferencia", "Currículo y libros de texto"], source:"https://hipatiapress.com/hpjournals/index.php/redimat/en/article/view/16051/5022"},
+{author:"Jorge Zapata Hernández", sex:"M", type:"Artículo de investigación", title:"Organizational Climate Management in the Context of Initial Mathematics Teacher Education", year:2025, area:"Pedagogía", temas:["Gestión y clima organizacional", "Formación de profesores"], source:"https://www.ijournalse.org/index.php/ESJ/article/view/2783"},
+{author:"Jorge Zapata Hernández", sex:"M", type:"Artículo de investigación", title:"Relationship between motivation and satisfaction with the commitment of university teachers in the mathematics education program: contributions to the climate from the management of organizational health", year:2025, area:"Pedagogía", temas:["Gestión y clima organizacional"], source:"https://sct.ageditor.ar/index.php/sct/article/view/1084"},
+{author:"Jorge Zapata Hernández", sex:"M", type:"Artículo de investigación", title:"Periodic orbits and KAM tori of a particle around a homogeneous elongated body", year:2025, area:"Disciplinar", temas:["Dinámica de sistemas"], source:"https://www.tandfonline.com/doi/abs/10.1080/14689367.2024.2426585"},
+{author:"Daniela Araya Bastias", sex:"F", type:"Artículo de investigación", title:"Feedback and justice in education: an exploration of the conceptions of teachers training future professors in a Chilean university", year:2025, area:"Pedagogía", temas:["Práctica y evaluación docente"], source:"https://pure.ucentral.cl/es/publications/retroalimentación-y-justicia-en-educación-una-exploración-a-las-c/"},
+{author:"Jorge Zapata Hernández", sex:"M", type:"Artículo de investigación", title:"Modeling and dynamics near irregular elongated asteroids", year:2025, area:"Disciplinar", temas:["Dinámica de sistemas"], source:"https://link.springer.com/article/10.1007/s10569-025-10244-4"},
+{author:"Jorge Zapata Hernández", sex:"M", type:"Artículo de investigación", title:"Stability, periodic orbits and KAM tori in the dynamics of the three fixed centers problem", year:2025, area:"Disciplinar", temas:["Dinámica de sistemas"], source:"https://arxiv.org/abs/2501.13089"},
+{author:"Jorge Zapata Hernández", sex:"M", type:"Artículo de investigación", title:"Geometric Numerical Test via Collective Integrators: A Tool for Orbital and Attitude Propagation", year:2025, area:"Disciplinar", temas:["Dinámica de sistemas"], source:"https://doi.org/10.3390/sym17101652"},
+{author:"Jorge Zapata Hernández", sex:"M", type:"Artículo de investigación", title:"Integrability and periodic orbits in the generalized quasispecies model", year:2025, area:"Disciplinar", temas:["Dinámica de sistemas"], source:"https://utilitasmathematica.com/index.php/Index/article/view/2674"},
+{author:"Jorge Zapata Hernández", sex:"M", type:"Artículo de investigación", title:"Addition theorems for ODE: Application to evaluation of the Weierstrass function", year:2025, area:"Disciplinar", temas:["Análisis y EDO"], source:"https://www.nonlinearstudies.com/index.php/nonlinear/article/view/3663"},
+{author:"Erich Leighton Vallejos", sex:"M", type:"Artículo de investigación", title:"Reflection on practice in teacher training: analysis of Pythagorean Theorem class simulations with Didactic Suitability Criteria", year:2025, area:"Didáctica de la Matemática", temas:["Geometría", "Práctica y evaluación docente"], source:"https://doi.org/10.37001/ripem.v15i1.4247"},
+{author:"Erich Leighton Vallejos", sex:"M", type:"Artículo de investigación", title:"Diseño y validación de un cuestionario para identificar necesidades formativas en Educación Matemática Inclusiva", year:2025, area:"Didáctica de la Matemática", temas:["Inclusión y diversidad"], source:"https://www.interciencia.net/wp-content/uploads/2025/08/01_7333_A_Espinoza_v50n8_10.pdf"},
+{author:"Nicolás Sánchez Acevedo", sex:"M", type:"Artículo de investigación", title:"Análisis de las actividades que proponen dos libros de texto de educación primaria. Un acercamiento comparativo desde la perspectiva de la inferencia informal", year:2021, area:"Didáctica de la Matemática", temas:["Currículo y libros de texto", "Estadística e inferencia"], source:"https://www.scielo.cl/scielo.php?script=sci_arttext&pid=S0718-51622022000200076"},
+{author:"Nicolás Sánchez Acevedo", sex:"M", type:"Artículo de investigación", title:"Conocimiento especializado del profesor de Matemáticas evidenciado en la selección y uso de ejemplos en la enseñanza de la ecuación cuadrática", year:2024, area:"Didáctica de la Matemática", temas:["Práctica y evaluación docente", "Álgebra escolar"], source:"https://www.scielo.br/j/bolema/a/KdWSGdYQDxtjtgdzZncmJHk/abstract/?lang=es"},
+{author:"Nicolás Sánchez Acevedo", sex:"M", type:"Artículo de investigación", title:"Comprensión que muestran futuros profesores de Matemática y estadística de los intervalos de confianza sobre la media", year:2024, area:"Didáctica de la Matemática", temas:["Estadística e inferencia", "Formación de profesores"], source:"https://seer.ufu.br/index.php/emrevista/article/view/72692"},
+{author:"Nicolás Sánchez Acevedo", sex:"M", type:"Artículo de investigación", title:"Una aproximación a la comprensión de hipótesis estadística de la media por futuros profesores de matemáticas", year:2025, area:"Didáctica de la Matemática", temas:["Estadística e inferencia", "Formación de profesores"], source:"https://doi.org/10.33010/ie_rie_rediech.v16i0.2580"},
+{author:"Nicolás Sánchez Acevedo", sex:"M", type:"Artículo de investigación", title:"Conocimiento especializado del profesor de Matemáticas al seleccionar y usar ejemplos en la factorización de expresiones algebraicas", year:2025, area:"Didáctica de la Matemática", temas:["Práctica y evaluación docente", "Álgebra escolar"], source:"https://doi.org/10.48489/quadrante.38106"},
+{author:"Nicolás Sánchez Acevedo", sex:"M", type:"Artículo de investigación", title:"Niveles de comprensión gráfica que moviliza un futuro profesor de matemática en el contexto de educación para jóvenes y adultos (EPJA)", year:2025, area:"Didáctica de la Matemática", temas:["Estadística e inferencia", "Formación de profesores"], source:"https://doi.org/10.37618/PARADIGMA.1011-2251.2025.e2025041.id1620"},
+{author:"Nicolás Sánchez Acevedo", sex:"M", type:"Artículo de investigación", title:"Conocimiento especializado manifestado por una profesora de matemática en la enseñanza de la desviación estándar", year:2025, area:"Didáctica de la Matemática", temas:["Estadística e inferencia", "Práctica y evaluación docente"], source:"https://ve.scielo.org/scielo.php?pid=S2443-45662025000100193&script=sci_arttext"},
+{author:"Nicolás Sánchez Acevedo", sex:"M", type:"Artículo de investigación", title:"Conocimiento especializado de una profesora de matemática en la ejemplificación de la ecuación cuadrática. El caso de la descomposición de radicales", year:2025, area:"Didáctica de la Matemática", temas:["Práctica y evaluación docente", "Álgebra escolar"], source:"https://revistas.ucr.ac.cr/index.php/rcifem/article/view/7317"}
+];
+
+const AREA_HEX = {"Pedagogía":"#B24C63","Didáctica de la Matemática":"#A97418","Disciplinar":"#276B5E"};
+const AREA_SOFT = {"Pedagogía":"var(--pedagogia-soft)","Didáctica de la Matemática":"var(--didactica-soft)","Disciplinar":"var(--disciplinar-soft)"};
+</script>
+<script>
+/* ============ SOURCE PARSING ============ */
+function parseSource(raw){
+  const s = (raw || "").trim();
+  if(!s) return {label:"—", url:null};
+  const httpMatch = s.match(/^(https?:\/\/\S+)/i);
+  if(httpMatch){
+    let url = httpMatch[1];
+    let label = "Ver fuente";
+    const doiM = url.match(/doi\.org\/(10\.\S+)/i);
+    if(doiM) label = doiM[1];
+    return {label, url: encodeURI(decodeURI(url))};
+  }
+  if(/^doi:/i.test(s)){
+    const code = s.replace(/^doi:\s*/i,"").trim();
+    return {label:code, url:"https://doi.org/" + encodeURI(code)};
+  }
+  if(/^10\.\d{4,9}\//.test(s)) return {label:s, url:"https://doi.org/" + encodeURI(s)};
+  return {label:s, url:null};
+}
+
+/* ============ STATE ============ */
+const state = {q:"", area:"todas", tema:"todos", year:"todos", author:"todos", sort:"year-desc"};
+
+/* ============ HERO STATS ============ */
+function renderStats(){
+  const years = DATA.map(d=>d.year);
+  const authors = new Set(DATA.map(d=>d.author));
+  const temas = new Set(DATA.flatMap(d=>d.temas));
+  const stats = [
+    {n:DATA.length, l:"Artículos"},
+    {n:authors.size, l:"Académicas/os"},
+    {n:temas.size, l:"Temas de investigación"},
+    {n:Math.min(...years) + "–" + Math.max(...years), l:"Rango de años"}
+  ];
+  const row = document.getElementById("statRow");
+  stats.forEach(s=>{
+    const div = document.createElement("div"); div.className="stat";
+    const n = document.createElement("span"); n.className="n"; n.textContent=s.n;
+    const l = document.createElement("span"); l.className="l"; l.textContent=s.l;
+    div.appendChild(n); div.appendChild(l); row.appendChild(div);
+  });
+  document.getElementById("footerCount").textContent = DATA.length + " registros · generado en el navegador";
+}
+
+/* ============ FILTER OPTIONS ============ */
+function populateFilters(){
+  function fill(id, list, allLabel){
+    const select = document.getElementById(id);
+    select.innerHTML = "";
+    list.forEach(v=>{
+      const opt = document.createElement("option");
+      opt.value = v;
+      opt.textContent = (v==="todas"||v==="todos") ? allLabel : v;
+      select.appendChild(opt);
+    });
+  }
+  fill("areaSelect", ["todas", ...new Set(DATA.map(d=>d.area))], "Todas las áreas");
+  fill("temaSelect", ["todos", ...[...new Set(DATA.flatMap(d=>d.temas))].sort((a,b)=>a.localeCompare(b,"es"))], "Todos los temas");
+  fill("yearSelect", ["todos", ...[...new Set(DATA.map(d=>d.year))].sort((a,b)=>b-a)], "Todos los años");
+  fill("authorSelect", ["todos", ...[...new Set(DATA.map(d=>d.author))].sort((a,b)=>a.localeCompare(b,"es"))], "Todos los autores");
+}
+
+/* ============ FILTERING ============ */
+function applyFilters(){
+  let list = DATA.filter(d=>{
+    if(state.area !== "todas" && d.area !== state.area) return false;
+    if(state.tema !== "todos" && !d.temas.includes(state.tema)) return false;
+    if(state.year !== "todos" && String(d.year) !== String(state.year)) return false;
+    if(state.author !== "todos" && d.author !== state.author) return false;
+    if(state.q){
+      const q = state.q.toLowerCase();
+      const hay = d.title.toLowerCase().includes(q) || d.author.toLowerCase().includes(q) || d.temas.some(t=>t.toLowerCase().includes(q));
+      if(!hay) return false;
+    }
+    return true;
+  });
+  switch(state.sort){
+    case "year-desc": list.sort((a,b)=> b.year-a.year || a.author.localeCompare(b.author,"es")); break;
+    case "year-asc": list.sort((a,b)=> a.year-b.year || a.author.localeCompare(b.author,"es")); break;
+    case "author-asc": list.sort((a,b)=> a.author.localeCompare(b.author,"es") || b.year-a.year); break;
+    case "title-asc": list.sort((a,b)=> a.title.localeCompare(b.title,"es")); break;
+  }
+  return list;
+}
+
+/* ============ CATALOG ============ */
+function setTemaFilter(tema){
+  state.tema = tema;
+  document.getElementById("temaSelect").value = tema;
+  const chip = document.getElementById("activeNodeChip");
+  document.getElementById("activeNodeLabel").textContent = "Tema: " + tema;
+  chip.style.display = "inline-flex";
+  renderCatalog();
+}
+
+function buildCard(d){
+  const card = document.createElement("article");
+  card.className = "card";
+  card.style.setProperty("--area-color", AREA_HEX[d.area]);
+  card.style.setProperty("--area-soft", AREA_SOFT[d.area]);
+
+  const meta = document.createElement("div"); meta.className="card__meta";
+  const mt = document.createElement("span"); mt.textContent = "Artículo";
+  const my = document.createElement("span"); my.textContent = d.year;
+  meta.appendChild(mt); meta.appendChild(my);
+
+  const title = document.createElement("h3"); title.className="card__title"; title.textContent = d.title;
+
+  const author = document.createElement("div"); author.className="card__author";
+  const sm = document.createElement("span"); sm.className="sex-mark"; sm.textContent = d.sex;
+  const an = document.createElement("span"); an.textContent = d.author;
+  author.appendChild(sm); author.appendChild(an);
+
+  const temaRow = document.createElement("div"); temaRow.className="tema-row";
+  d.temas.forEach(t=>{
+    const chip = document.createElement("button");
+    chip.className = "tema-chip"; chip.type = "button"; chip.textContent = t;
+    chip.addEventListener("click", ()=> setTemaFilter(t));
+    temaRow.appendChild(chip);
+  });
+
+  const cardFooter = document.createElement("div"); cardFooter.className="card__footer";
+  const pill = document.createElement("span"); pill.className="area-pill"; pill.textContent = d.area;
+  const src = parseSource(d.source);
+  let link;
+  if(src.url){
+    link = document.createElement("a");
+    link.href = src.url; link.target="_blank"; link.rel="noopener noreferrer";
+    link.className="card__link"; link.textContent = "↗ " + src.label;
+  } else {
+    link = document.createElement("span");
+    link.className="card__link disabled"; link.textContent = src.label;
+  }
+  cardFooter.appendChild(pill); cardFooter.appendChild(link);
+
+  card.appendChild(meta); card.appendChild(title); card.appendChild(author);
+  card.appendChild(temaRow); card.appendChild(cardFooter);
+  return card;
+}
+
+function renderCatalog(){
+  const grid = document.getElementById("catalogGrid");
+  const list = applyFilters();
+  grid.innerHTML = "";
+  if(list.length === 0){
+    const empty = document.createElement("div"); empty.className="empty-state";
+    const p1 = document.createElement("p"); p1.textContent = "Ningún trabajo coincide con estos filtros.";
+    const p2 = document.createElement("p"); p2.textContent = "Prueba ampliando la búsqueda o quitando algún filtro.";
+    const btn = document.createElement("button"); btn.textContent = "Limpiar filtros";
+    btn.addEventListener("click", clearFilters);
+    empty.appendChild(p1); empty.appendChild(p2); empty.appendChild(btn);
+    grid.appendChild(empty);
+  } else {
+    list.forEach(d=> grid.appendChild(buildCard(d)));
+  }
+  document.getElementById("resultCount").textContent = "Mostrando " + list.length + " de " + DATA.length;
+}
+
+function clearFilters(){
+  state.q=""; state.area="todas"; state.tema="todos"; state.year="todos"; state.author="todos";
+  document.getElementById("searchInput").value="";
+  ["areaSelect","temaSelect","yearSelect","authorSelect"].forEach(id=> document.getElementById(id).selectedIndex = 0);
+  document.getElementById("activeNodeChip").style.display="none";
+  renderCatalog();
+}
+
+/* ============ CSV EXPORT (respeta filtros activos) ============ */
+function exportCsv(){
+  const list = applyFilters();
+  const esc = v => '"' + String(v).replace(/"/g,'""') + '"';
+  const header = ["Autor/a","Sexo","Tipo","Título","Año","Actividad curricular","Temas","Fuente"];
+  const rows = list.map(d=> [d.author, d.sex==="F"?"Femenino":"Masculino", d.type, d.title, d.year, d.area, d.temas.join("; "), d.source].map(esc).join(","));
+  const csv = "﻿" + header.map(esc).join(",") + "\n" + rows.join("\n");
+  const blob = new Blob([csv], {type:"text/csv;charset=utf-8"});
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = "produccion_academica_matematica_uss.csv";
+  a.click();
+  URL.revokeObjectURL(a.href);
+}
+document.getElementById("exportCsv").addEventListener("click", exportCsv);
+
+/* ============ FILTER EVENTS ============ */
+let searchTimer;
+document.getElementById("searchInput").addEventListener("input", e=>{
+  clearTimeout(searchTimer);
+  searchTimer = setTimeout(()=>{ state.q = e.target.value; renderCatalog(); }, 140);
+});
+[["areaSelect","area"],["temaSelect","tema"],["yearSelect","year"],["authorSelect","author"],["sortSelect","sort"]].forEach(([id,key])=>{
+  document.getElementById(id).addEventListener("change", e=>{
+    state[key] = e.target.value;
+    if(key==="tema"){
+      if(e.target.value==="todos"){ document.getElementById("activeNodeChip").style.display="none"; }
+      else { setTemaFilter(e.target.value); return; }
+    }
+    renderCatalog();
+  });
+});
+document.getElementById("clearFilters").addEventListener("click", clearFilters);
+document.getElementById("activeNodeClear").addEventListener("click", clearFilters);
+
+/* ============ PANORAMA ============ */
+function renderPanorama(){
+  const wrap = document.getElementById("panoramaGrid");
+  wrap.innerHTML = "";
+  function block(title, rows, colorFn){
+    const b = document.createElement("div"); b.className="panorama-block";
+    const h = document.createElement("h3"); h.textContent = title; b.appendChild(h);
+    const max = Math.max(...rows.map(r=>r.count));
+    rows.forEach(r=>{
+      const row = document.createElement("div"); row.className="bar-row";
+      const label = document.createElement("div"); label.className="bar-row__label";
+      const ns = document.createElement("span"); ns.textContent = r.label;
+      const cs = document.createElement("span"); cs.className="n"; cs.textContent = r.count;
+      label.appendChild(ns); label.appendChild(cs);
+      const track = document.createElement("div"); track.className="bar-track";
+      const fill = document.createElement("div"); fill.className="bar-fill";
+      fill.style.width = (r.count/max*100) + "%";
+      fill.style.background = colorFn ? colorFn(r.label) : "var(--ink)";
+      track.appendChild(fill);
+      row.appendChild(label); row.appendChild(track); b.appendChild(row);
+    });
+    wrap.appendChild(b);
+  }
+  const byArea = d3.rollups(DATA, v=>v.length, d=>d.area).map(([label,count])=>({label,count}));
+  const temaCounts = d3.rollups(DATA.flatMap(d=>d.temas.map(t=>({t}))), v=>v.length, d=>d.t)
+    .sort((a,b)=>b[1]-a[1]).slice(0,8).map(([label,count])=>({label,count}));
+  const prodAutor = d3.rollups(DATA, v=>v.length, d=>d.author)
+    .sort((a,b)=>b[1]-a[1]).slice(0,8).map(([label,count])=>({label,count}));
+  const authorSex = new Map();
+  DATA.forEach(d=>{ if(!authorSex.has(d.author)) authorSex.set(d.author, d.sex); });
+  const sexCounts = d3.rollups([...authorSex.values()], v=>v.length, s=>s).map(([label,count])=>({label:label==="F"?"Autoras":"Autores", count}));
+
+  block("Por actividad curricular", byArea, l=>AREA_HEX[l]);
+  block("Temas más frecuentes", temaCounts, ()=> "var(--gold)");
+  block("Mayor producción (top 8)", prodAutor);
+  block("Composición del equipo (por autor/a)", sexCounts);
+}
+
+/* ============ TIMELINE ============ */
+function renderTimeline(){
+  const svg = d3.select("#timelineSvg");
+  const W = 1100, H = 300, m = {top:16, right:20, bottom:34, left:36};
+  svg.attr("viewBox", "0 0 " + W + " " + H);
+  const areas = ["Pedagogía","Didáctica de la Matemática","Disciplinar"];
+  const years = [...new Set(DATA.map(d=>d.year))].sort((a,b)=>a-b);
+  const table = years.map(y=>{
+    const row = {year:y};
+    areas.forEach(a=> row[a] = DATA.filter(d=>d.year===y && d.area===a).length);
+    return row;
+  });
+  const stack = d3.stack().keys(areas)(table);
+  const x = d3.scaleBand().domain(years).range([m.left, W-m.right]).padding(0.28);
+  const yMax = d3.max(table, r=> areas.reduce((s,a)=>s+r[a],0));
+  const y = d3.scaleLinear().domain([0, yMax]).nice().range([H-m.bottom, m.top]);
+
+  const g = svg.append("g");
+  y.ticks(5).forEach(t=>{
+    g.append("line").attr("x1",m.left).attr("x2",W-m.right).attr("y1",y(t)).attr("y2",y(t))
+      .attr("stroke","#C9BFA3").attr("stroke-width",1).attr("opacity",0.5);
+    g.append("text").attr("x",m.left-8).attr("y",y(t)+4).attr("text-anchor","end")
+      .attr("font-family","IBM Plex Mono, monospace").attr("font-size",11).attr("fill","#8B8878").text(t);
+  });
+
+  const tooltip = document.getElementById("tooltip");
+  svg.append("g").selectAll("g").data(stack).join("g")
+    .attr("fill", s=> AREA_HEX[s.key])
+    .selectAll("rect").data(s=> s.map(d=>({...d, key:s.key}))).join("rect")
+    .attr("x", d=> x(d.data.year))
+    .attr("y", d=> y(d[1]))
+    .attr("width", x.bandwidth())
+    .attr("height", d=> Math.max(0, y(d[0]) - y(d[1])))
+    .attr("rx", 2)
+    .on("mousemove", (ev,d)=>{
+      tooltip.style.opacity = 1;
+      tooltip.style.left = (ev.clientX+14)+"px";
+      tooltip.style.top = (ev.clientY+14)+"px";
+      tooltip.textContent = d.data.year + " · " + d.key + ": " + (d[1]-d[0]) + " artículos";
+    })
+    .on("mouseleave", ()=> tooltip.style.opacity = 0);
+
+  years.forEach(yr=>{
+    const total = areas.reduce((s,a)=> s + table.find(r=>r.year===yr)[a], 0);
+    svg.append("text").attr("x", x(yr)+x.bandwidth()/2).attr("y", H-m.bottom+22)
+      .attr("text-anchor","middle").attr("font-family","IBM Plex Mono, monospace")
+      .attr("font-size",12).attr("fill","#5B5A66").text(yr);
+    svg.append("text").attr("x", x(yr)+x.bandwidth()/2)
+      .attr("y", y(total)-6).attr("text-anchor","middle")
+      .attr("font-family","Fraunces, serif").attr("font-weight",600)
+      .attr("font-size",13).attr("fill","#1B1E2B").text(total);
+  });
+}
+
+/* ============ HERO DECOR ============ */
+function renderHeroDecor(){
+  const svg = document.getElementById("heroDecor");
+  const w = 1400, h = 640;
+  svg.setAttribute("viewBox", "0 0 " + w + " " + h);
+  const ns = "http://www.w3.org/2000/svg";
+  const points = [];
+  const cols = 9, rows = 5;
+  for(let i=0;i<cols;i++) for(let j=0;j<rows;j++){
+    points.push({x:(w/cols)*i+(w/cols)*0.5+Math.sin(i*7+j*3)*30, y:(h/rows)*j+(h/rows)*0.5+Math.cos(i*4+j*9)*24});
+  }
+  points.forEach((p,i)=>{
+    points.slice(i+1,i+3).forEach(q=>{
+      const line = document.createElementNS(ns,"line");
+      line.setAttribute("x1",p.x); line.setAttribute("y1",p.y);
+      line.setAttribute("x2",q.x); line.setAttribute("y2",q.y);
+      line.setAttribute("stroke","#1B1E2B"); line.setAttribute("stroke-width","1"); line.setAttribute("opacity","0.06");
+      svg.appendChild(line);
+    });
+  });
+  const hexes = Object.values(AREA_HEX);
+  points.forEach((p,i)=>{
+    const c = document.createElementNS(ns,"circle");
+    c.setAttribute("cx",p.x); c.setAttribute("cy",p.y);
+    c.setAttribute("r", i%5===0 ? 4 : 2.2);
+    c.setAttribute("fill", hexes[i%hexes.length]); c.setAttribute("opacity","0.28");
+    svg.appendChild(c);
+  });
+}
+
+/* ============ INIT ============ */
+renderStats();
+populateFilters();
+renderCatalog();
+renderPanorama();
+renderTimeline();
+renderHeroDecor();
+</script>
+</body>
+</html>
